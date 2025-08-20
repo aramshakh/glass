@@ -359,7 +359,11 @@ Keep all points concise and build upon previous analysis if provided.`,
                 }
 
                 try {
-                    sttRepository.updateTranscriptType(target.id, target.nvc_type);
+                    sttRepository.updateTranscriptType(
+                        target.session_id,
+                        target.id,
+                        target.nvc_type
+                    );
                 } catch (err) {
                     console.error('Error updating transcript type:', err);
                 }

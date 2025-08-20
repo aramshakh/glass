@@ -18,9 +18,9 @@ const sttRepositoryAdapter = {
     getAllTranscriptsBySessionId: (sessionId) => {
         return getBaseRepository().getAllTranscriptsBySessionId(sessionId);
     },
-    updateTranscriptType: (id, nvc_type) => {
-        return getBaseRepository().updateTranscriptType(id, nvc_type);
+    updateTranscriptType: (sessionId, id, nvc_type) => {
+        return getBaseRepository().updateTranscriptType(sessionId, id, nvc_type);
     }
 };
 
-module.exports = sttRepositoryAdapter; 
+module.exports = sttRepositoryAdapter;
