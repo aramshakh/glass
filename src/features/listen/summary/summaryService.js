@@ -4,6 +4,38 @@ const { createLLM } = require('../../common/ai/factory');
 const sessionRepository = require('../../common/repositories/session');
 const summaryRepository = require('./repositories');
 const modelStateService = require('../../common/services/modelStateService');
+const nvcEmotions = require('./nvcEmotions');
+
+const FEELING_DETECTION_PROMPT = `
+Only report emotions from the following Nonviolent Communication (NVC) list:
+
+When needs are satisfied
+- affectionate: compassionate, friendly, loving, open hearted, sympathetic, tender, warm
+- engaged: absorbed, alert, curious, engrossed, fascinated, interested, involved, intrigued, stimulated
+- hopeful: expectant, encouraged, optimistic
+- confident: empowered, open, proud, safe, secure
+- excited: amazed, ardent, eager, energetic, enthusiastic, exhilarated, inspired, lively, passionate, surprised
+- grateful: appreciative, thankful
+- joyful: amused, delighted, glad, happy, jubilant, pleased, satisfied, tickled
+- peaceful: calm, comfortable, fulfilled, mellow, quiet, relaxed, relieved, serene, tranquil
+- refreshed: enlivened, rejuvenated, renewed, rested, restored, revived
+
+When needs are not satisfied
+- afraid: apprehensive, dread, frightened, mistrustful, panicked, petrified, scared, suspicious, terrified, worried
+- angry: enraged, furious, incensed, indignant, irate, livid, outraged, resentful
+- annoyed: aggravated, dismayed, exasperated, frustrated, impatient, irritated
+- aversion: averse, disgusted, disliking, horrified, nauseated, repulsed
+- confused: ambivalent, bewildered, dazed, hesitant, lost, puzzled, torn
+- disconnected: aloof, apathetic, bored, cold, detached, distant, indifferent, withdrawn
+- disquiet: agitated, alarmed, disturbed, nervous, restless, shocked, startled, tense, troubled, upset
+- embarrassed: ashamed, chagrined, flustered, guilty, self-conscious
+- exhausted: beat, depleted, fatigued, lethargic, sleepy, tired, weary, worn out
+- grief: depressed, despairing, disappointed, discouraged, hopeless, sad, sorrowful, tearful
+- pain: anguished, heartbroken, hurt, lonely, miserable, regretful, remorseful
+- tense: anxious, cranky, edgy, fidgety, frazzled, jittery, nervous, overwhelmed, stressed
+
+Return each detected emotion as a bullet under an **Emotions** section.
+`;
 
 class SummaryService {
     constructor() {
@@ -113,10 +145,16 @@ Please build upon this context while analyzing the new conversation segments.
                     role: 'user',
                     content: `${contextualPrompt}
 
+Detect speaker emotions from NVC list.
 Analyze the conversation and provide a structured summary. Format your response as follows:
 
 **Summary Overview**
 - Main discussion point with context
+
+**Emotions**
+- First detected emotion
+- Second detected emotion
+- Third detected emotion
 
 **Key Topic: [Topic Name]**
 - First key insight
@@ -131,7 +169,8 @@ Provide 2-3 sentences explaining the context and implications.
 2. Second follow-up question?
 3. Third follow-up question?
 
-Keep all points concise and build upon previous analysis if provided.`,
+Keep all points concise and build upon previous analysis if provided.
+${FEELING_DETECTION_PROMPT}`,
                 },
             ];
 
@@ -191,6 +230,7 @@ Keep all points concise and build upon previous analysis if provided.`,
             summary: [],
             topic: { header: '', bullets: [] },
             actions: [],
+            emotions: [],
             followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
         };
 
@@ -212,6 +252,9 @@ Keep all points concise and build upon previous analysis if provided.`,
                 // 섹션 헤더 감지
                 if (trimmedLine.startsWith('**Summary Overview**')) {
                     currentSection = 'summary-overview';
+                    continue;
+                } else if (trimmedLine.startsWith('**Emotions**')) {
+                    currentSection = 'emotions';
                     continue;
                 } else if (trimmedLine.startsWith('**Key Topic:')) {
                     currentSection = 'topic';
@@ -237,6 +280,16 @@ Keep all points concise and build upon previous analysis if provided.`,
                         structuredData.summary.unshift(summaryPoint);
                         if (structuredData.summary.length > 5) {
                             structuredData.summary.pop();
+                        }
+                    }
+                } else if (trimmedLine.startsWith('-') && currentSection === 'emotions') {
+                    const emotion = trimmedLine.substring(1).trim();
+                    if (emotion) {
+                        const normalized = emotion.toLowerCase();
+                        if (!nvcEmotions || nvcEmotions.includes(normalized)) {
+                            if (!structuredData.emotions.includes(emotion)) {
+                                structuredData.emotions.push(emotion);
+                            }
                         }
                     }
                 } else if (trimmedLine.startsWith('-') && currentSection === 'topic') {
@@ -290,6 +343,7 @@ Keep all points concise and build upon previous analysis if provided.`,
                     summary: [],
                     topic: { header: 'Analysis in progress', bullets: [] },
                     actions: ['✨ What should I say next?', '💬 Suggest follow-up questions'],
+                    emotions: [],
                     followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
                 }
             );
