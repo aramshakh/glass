@@ -60,6 +60,9 @@ npm run setup
 
 ### Meetings: real-time meeting notes, live summaries, session records
 
+Now captures emotional cues from conversations and surfaces them alongside the
+summary for added context.
+
 <img width="100%" alt="booking-screen" src="./public/assets/01.gif">
 
 ### Use your own API key, or sign up to use ours (free)
