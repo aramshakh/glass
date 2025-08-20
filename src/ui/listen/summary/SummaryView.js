@@ -422,7 +422,7 @@ export class SummaryView extends LitElement {
     }
 
     getSummaryText() {
-        const data = this.structuredData || { summary: [], topic: { header: '', bullets: [] }, actions: [] };
+        const data = this.structuredData || { summary: [], topic: { header: '', bullets: [] }, actions: [], emotions: [] };
         let sections = [];
 
         if (data.summary && data.summary.length > 0) {
@@ -435,6 +435,10 @@ export class SummaryView extends LitElement {
 
         if (data.actions && data.actions.length > 0) {
             sections.push(`\nActions:\n${data.actions.map(a => `▸ ${a}`).join('\n')}`);
+        }
+
+        if (data.emotions && data.emotions.length > 0) {
+            sections.push(`\nEmotions:\n${data.emotions.map(e => `• ${e}`).join('\n')}`);
         }
 
         if (data.followUps && data.followUps.length > 0) {
@@ -458,9 +462,14 @@ export class SummaryView extends LitElement {
             summary: [],
             topic: { header: '', bullets: [] },
             actions: [],
+            emotions: [],
         };
 
-        const hasAnyContent = data.summary.length > 0 || data.topic.bullets.length > 0 || data.actions.length > 0;
+        const hasAnyContent =
+            data.summary.length > 0 ||
+            data.topic.bullets.length > 0 ||
+            data.actions.length > 0 ||
+            data.emotions.length > 0;
 
         return html`
             <div class="insights-container">
@@ -517,6 +526,25 @@ export class SummaryView extends LitElement {
                                                   @click=${() => this.handleMarkdownClick(action)}
                                               >
                                                   ${action}
+                                              </div>
+                                          `
+                                      )}
+                              `
+                            : ''}
+                        ${data.emotions.length > 0
+                            ? html`
+                                  <insights-title>Emotions</insights-title>
+                                  ${data.emotions
+                                      .slice(0, 5)
+                                      .map(
+                                          (emotion, index) => html`
+                                              <div
+                                                  class="markdown-content"
+                                                  data-markdown-id="emotion-${index}"
+                                                  data-original-text="${emotion}"
+                                                  @click=${() => this.handleMarkdownClick(emotion)}
+                                              >
+                                                  ${emotion}
                                               </div>
                                           `
                                       )}

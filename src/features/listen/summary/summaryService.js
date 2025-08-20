@@ -56,6 +56,34 @@ class SummaryService {
         console.log('🔄 Conversation history and analysis state reset');
     }
 
+    buildAnalysisPrompt(contextualPrompt = '') {
+        return `${contextualPrompt}
+
+Analyze the conversation and provide a structured summary. Format your response as follows:
+
+**Summary Overview**
+- Main discussion point with context
+
+**Key Topic: [Topic Name]**
+- First key insight
+- Second key insight
+- Third key insight
+
+**Extended Explanation**
+Provide 2-3 sentences explaining the context and implications.
+
+**Emotions**
+- First emotion and brief context
+- Second emotion and brief context
+
+**Suggested Questions**
+1. First follow-up question?
+2. Second follow-up question?
+3. Third follow-up question?
+
+Keep all points concise and build upon previous analysis if provided.`;
+    }
+
     /**
      * Converts conversation history into text to include in the prompt.
      * @param {Array<string>} conversationTexts - Array of conversation texts ["me: ~~~", "them: ~~~", ...]
@@ -105,34 +133,8 @@ Please build upon this context while analyzing the new conversation segments.
             console.log(`🤖 Sending analysis request to ${modelInfo.provider} using model ${modelInfo.model}`);
             
             const messages = [
-                {
-                    role: 'system',
-                    content: systemPrompt,
-                },
-                {
-                    role: 'user',
-                    content: `${contextualPrompt}
-
-Analyze the conversation and provide a structured summary. Format your response as follows:
-
-**Summary Overview**
-- Main discussion point with context
-
-**Key Topic: [Topic Name]**
-- First key insight
-- Second key insight
-- Third key insight
-
-**Extended Explanation**
-Provide 2-3 sentences explaining the context and implications.
-
-**Suggested Questions**
-1. First follow-up question?
-2. Second follow-up question?
-3. Third follow-up question?
-
-Keep all points concise and build upon previous analysis if provided.`,
-                },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: this.buildAnalysisPrompt(contextualPrompt) },
             ];
 
             console.log('🤖 Sending analysis request to AI...');
@@ -160,7 +162,8 @@ Keep all points concise and build upon previous analysis if provided.`,
                         tldr: structuredData.summary.join('\n'),
                         bullet_json: JSON.stringify(structuredData.topic.bullets),
                         action_json: JSON.stringify(structuredData.actions),
-                        model: modelInfo.model
+                        emotion_json: JSON.stringify(structuredData.emotions),
+                        model: modelInfo.model,
                     });
                 } catch (err) {
                     console.error('[DB] Failed to save summary:', err);
@@ -191,6 +194,7 @@ Keep all points concise and build upon previous analysis if provided.`,
             summary: [],
             topic: { header: '', bullets: [] },
             actions: [],
+            emotions: [],
             followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
         };
 
@@ -224,6 +228,9 @@ Keep all points concise and build upon previous analysis if provided.`,
                 } else if (trimmedLine.startsWith('**Extended Explanation**')) {
                     currentSection = 'explanation';
                     continue;
+                } else if (trimmedLine.startsWith('**Emotions**')) {
+                    currentSection = 'emotions';
+                    continue;
                 } else if (trimmedLine.startsWith('**Suggested Questions**')) {
                     currentSection = 'questions';
                     continue;
@@ -256,6 +263,11 @@ Keep all points concise and build upon previous analysis if provided.`,
                             structuredData.topic.bullets.push(sentence);
                         }
                     });
+                } else if (trimmedLine.startsWith('-') && currentSection === 'emotions') {
+                    const emotion = trimmedLine.substring(1).trim();
+                    if (emotion) {
+                        structuredData.emotions.push(emotion);
+                    }
                 } else if (trimmedLine.match(/^\d+\./) && currentSection === 'questions') {
                     const question = trimmedLine.replace(/^\d+\.\s*/, '').trim();
                     if (question && question.includes('?')) {
@@ -290,6 +302,7 @@ Keep all points concise and build upon previous analysis if provided.`,
                     summary: [],
                     topic: { header: 'Analysis in progress', bullets: [] },
                     actions: ['✨ What should I say next?', '💬 Suggest follow-up questions'],
+                    emotions: [],
                     followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
                 }
             );
