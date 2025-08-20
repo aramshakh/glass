@@ -154,6 +154,7 @@ async function checkAndRunMigration(firebaseUser) {
                     text: encryptionService.encrypt(summary.text ?? ''),
                     bullet_json: encryptionService.encrypt(summary.bullet_json ?? '[]'),
                     action_json: encryptionService.encrypt(summary.action_json ?? '[]'),
+                    emotion_json: encryptionService.encrypt(summary.emotion_json ?? '{}'),
                     tokens_used: summary.tokens_used ?? null,
                     updated_at: summary.updated_at ? Timestamp.fromMillis(summary.updated_at * 1000) : null
                 };
