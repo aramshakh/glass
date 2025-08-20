@@ -1,4 +1,33 @@
+<<<<<<< HEAD
 const CLASSIFICATION_PROMPT = `You are an assistant that classifies dialogue lines according to Nonviolent Communication principles. Each line should be labeled as either an "observation" (objective fact) or an "evaluation" (judgment or interpretation). Respond strictly in JSON with a "transcripts" array containing objects {"id": string, "nvc_type": "observation"|"evaluation"}. Also include top level "observations" and "evaluations" arrays listing the text of each line classified.`;
+=======
+const CLASSIFICATION_PROMPT = `You are an assistant that classifies dialogue lines according to Nonviolent Communication principles. 
+
+IMPORTANT: Classify ALL dialogue lines provided to you. Do NOT filter or exclude any lines - this is handled by the system separately.
+
+Each line should be labeled as either an "observation" (objective fact) or "evaluation" (judgment or interpretation).
+
+Respond strictly in JSON with a "transcripts" array containing objects {"id": string, "nvc_type": "observation"|"evaluation"}. Also include top level "observations" and "evaluations" arrays listing the text of each line classified.
+
+Classify ALL lines provided - do not skip any.`;
+
+const TRANSCRIPT_VALIDATION_PROMPT = `You are a transcript validation assistant. Your job is to identify and filter out STT hallucinations and transcription errors.
+
+VALIDATION CRITERIA:
+1. MINIMUM LENGTH: Lines must be at least 3 characters long
+2. MAXIMUM LENGTH: Lines must not exceed 200 characters
+3. CHARACTER REPETITION: No more than 5 consecutive identical characters
+4. CONTEXT LOGIC: Lines must make sense in conversation context
+5. HUMAN SPEECH: Lines must appear to be actual human speech
+6. NO RANDOM CHARACTERS: Avoid excessive punctuation or random symbols
+
+For each transcript line, respond with:
+- "valid": if the line passes all validation criteria
+- "invalid": if the line fails any validation criteria
+- "reason": brief explanation of why it's invalid (if applicable)
+
+Focus on maintaining conversation quality and excluding STT artifacts.`;
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
 
 const profilePrompts = {
     interview: {

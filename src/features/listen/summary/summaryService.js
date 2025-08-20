@@ -25,15 +25,24 @@ class SummaryService {
     }
 
     setSessionId(sessionId) {
+        console.log(`🔍 DEBUG: setSessionId called with: ${sessionId}`);
+        console.log(`🔍 DEBUG: Previous sessionId: ${this.currentSessionId}`);
         this.currentSessionId = sessionId;
+        console.log(`🔍 DEBUG: New sessionId set: ${this.currentSessionId}`);
     }
 
     sendToRenderer(channel, data) {
+        console.log(`🔍 DEBUG: sendToRenderer called with channel: ${channel}`);
+        console.log(`🔍 DEBUG: Data type: ${typeof data}, Data keys:`, data ? Object.keys(data) : 'null');
+        
         const { windowPool } = require('../../../window/windowManager');
         const listenWindow = windowPool?.get('listen');
         
         if (listenWindow && !listenWindow.isDestroyed()) {
+            console.log(`🔍 DEBUG: Listen window found and not destroyed, sending data`);
             listenWindow.webContents.send(channel, data);
+        } else {
+            console.log(`🔍 DEBUG: Listen window not available or destroyed`);
         }
     }
 
@@ -42,6 +51,7 @@ class SummaryService {
         this.conversationHistory.push(conversationText);
         console.log(`💬 Added conversation text: ${conversationText}`);
         console.log(`📈 Total conversation history: ${this.conversationHistory.length} texts`);
+        console.log(`🔍 DEBUG: Speaker: ${speaker}, Text length: ${text.length}, Trimmed: ${text.trim().length}`);
 
         // Trigger analysis if needed
         this.triggerAnalysisIfNeeded();
@@ -52,12 +62,164 @@ class SummaryService {
     }
 
     resetConversationHistory() {
+        console.log(`🔍 DEBUG: resetConversationHistory called`);
+        console.log(`🔍 DEBUG: Before reset - conversationHistory length: ${this.conversationHistory.length}`);
+        console.log(`🔍 DEBUG: Before reset - cumulativeStats:`, this.cumulativeStats);
+        console.log(`🔍 DEBUG: Before reset - filterStats:`, this.filterStats);
+        
         this.conversationHistory = [];
         this.previousAnalysisResult = null;
         this.analysisHistory = [];
+<<<<<<< HEAD
+=======
+        // Сброс накопительной статистики
+        this.cumulativeStats = {
+            me: { observations: 0, evaluations: 0 },
+            them: { observations: 0, evaluations: 0 }
+        };
+
+        // Сброс статистики фильтрации
+        this.filterStats = {
+            total: 0,
+            filtered: 0,
+            suspicious: [],
+            reasons: {
+                tooShort: 0,
+                tooLong: 0,
+                repetitiveChars: 0,
+                excessiveVowels: 0,
+                excessiveConsonants: 0,
+                randomSymbols: 0,
+                numbersOnly: 0,
+                symbolsOnly: 0
+            }
+        };
+        
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
         console.log('🔄 Conversation history and analysis state reset');
+        console.log(`🔍 DEBUG: After reset - conversationHistory length: ${this.conversationHistory.length}`);
+        console.log(`🔍 DEBUG: After reset - cumulativeStats:`, this.cumulativeStats);
+        console.log(`🔍 DEBUG: After reset - filterStats:`, this.filterStats);
     }
 
+<<<<<<< HEAD
+=======
+    // Обновление накопительной статистики
+    updateCumulativeStats(userStats) {
+        console.log(`🔍 DEBUG: updateCumulativeStats called with:`, userStats);
+        console.log(`🔍 DEBUG: Current cumulative stats before update:`, this.cumulativeStats);
+        
+        if (userStats && userStats.me) {
+            this.cumulativeStats.me.observations += userStats.me.observations.length;
+            this.cumulativeStats.me.evaluations += userStats.me.evaluations.length;
+            console.log(`🔍 DEBUG: Updated me stats - observations: +${userStats.me.observations.length}, evaluations: +${userStats.me.evaluations.length}`);
+        }
+        if (userStats && userStats.them) {
+            this.cumulativeStats.them.observations += userStats.them.observations.length;
+            this.cumulativeStats.them.evaluations += userStats.them.evaluations.length;
+            console.log(`🔍 DEBUG: Updated them stats - observations: +${userStats.them.observations.length}, evaluations: +${userStats.them.evaluations.length}`);
+        }
+        
+        console.log('📊 Cumulative stats updated:', this.cumulativeStats);
+    }
+
+    // Фильтрация подозрительных транскриптов (STT галлюцинации)
+    filterValidTranscripts(transcripts) {
+        console.log(`🔍 DEBUG: filterValidTranscripts called with ${transcripts.length} transcripts`);
+        
+        if (!transcripts || transcripts.length === 0) {
+            console.log(`🔍 DEBUG: No transcripts to filter`);
+            return [];
+        }
+
+        const filtered = [];
+        const filteredOut = [];
+
+        transcripts.forEach((t, index) => {
+            console.log(`🔍 DEBUG: Processing transcript ${index + 1}/${transcripts.length}:`, { id: t.id, speaker: t.speaker, text: t.text?.substring(0, 50) + '...' });
+            
+            if (!t.text || typeof t.text !== 'string') {
+                console.log(`🔍 DEBUG: Transcript ${index + 1} - invalid type, filtering out`);
+                filteredOut.push({ transcript: t, reason: 'invalidType' });
+                return;
+            }
+
+            const text = t.text.trim();
+            let reason = null;
+            
+            // Минимальная и максимальная длина
+            if (text.length < 3) {
+                reason = 'tooShort';
+            } else if (text.length > 200) {
+                reason = 'tooLong';
+            }
+            // Проверка на повторяющиеся символы (более 5 подряд)
+            else if (/(.)\1{5,}/.test(text)) {
+                reason = 'repetitiveChars';
+            }
+            // Проверка на чрезмерные гласные
+            else if (/[aeiou]{8,}/.test(text.toLowerCase())) {
+                reason = 'excessiveVowels';
+            }
+            // Проверка на чрезмерные согласные
+            else if (/[bcdfghjklmnpqrstvwxz]{8,}/.test(text.toLowerCase())) {
+                reason = 'excessiveConsonants';
+            }
+            // Проверка на случайные символы и пунктуацию
+            else if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{3,}/.test(text)) {
+                reason = 'randomSymbols';
+            }
+            // Проверка на числа (возможно, не речь)
+            else if (/^\d+$/.test(text)) {
+                reason = 'numbersOnly';
+            }
+            // Проверка на специальные символы (возможно, не речь)
+            else if (/^[^\w\s]+$/.test(text)) {
+                reason = 'symbolsOnly';
+            }
+
+            if (reason) {
+                console.log(`🔍 DEBUG: Transcript ${index + 1} filtered out - reason: ${reason}`);
+                filteredOut.push({ transcript: t, reason });
+                this.filterStats.reasons[reason]++;
+            } else {
+                console.log(`🔍 DEBUG: Transcript ${index + 1} passed filtering`);
+                filtered.push(t);
+            }
+        });
+
+        // Обновляем статистику фильтрации
+        this.filterStats.total += transcripts.length;
+        this.filterStats.filtered += filteredOut.length;
+        this.filterStats.suspicious.push(...filteredOut.map(item => ({ 
+            id: item.transcript.id, 
+            text: item.transcript.text, 
+            reason: item.reason,
+            timestamp: Date.now() 
+        })));
+
+        if (filteredOut.length > 0) {
+            console.log('🚫 Filtered out suspicious transcripts:');
+            filteredOut.forEach(item => {
+                console.log(`   - "${item.transcript.text}" (${item.reason})`);
+            });
+        }
+
+        // Детальная статистика по причинам
+        const reasonsSummary = Object.entries(this.filterStats.reasons)
+            .filter(([_, count]) => count > 0)
+            .map(([reason, count]) => `${reason}: ${count}`)
+            .join(', ');
+
+        console.log(`✅ Transcript filtering: ${transcripts.length} → ${filtered.length} (filtered out: ${filteredOut.length})`);
+        if (reasonsSummary) {
+            console.log(`📊 Filter reasons: ${reasonsSummary}`);
+        }
+        
+        return filtered;
+    }
+
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
     /**
      * Converts conversation history into text to include in the prompt.
      * @param {Array<string>} conversationTexts - Array of conversation texts ["me: ~~~", "them: ~~~", ...]
@@ -302,7 +464,12 @@ Keep all points concise and build upon previous analysis if provided.`,
     }
 
     async classifyConversation(transcripts) {
-        if (!transcripts || transcripts.length === 0) return null;
+        console.log(`🔍 DEBUG: classifyConversation called with ${transcripts.length} transcripts`);
+        
+        if (!transcripts || transcripts.length === 0) {
+            console.log(`🔍 DEBUG: No transcripts to classify`);
+            return null;
+        }
 
         try {
             const modelInfo = await modelStateService.getCurrentModelInfo('llm');
@@ -330,10 +497,18 @@ Keep all points concise and build upon previous analysis if provided.`,
                 },
             ];
 
+            console.log(`🔍 DEBUG: Sending classification request with ${transcripts.length} transcripts`);
+            console.log(`🔍 DEBUG: Request payload:`, messages[1].content);
+            console.log(`🔍 DEBUG: All transcripts being sent:`, transcripts.map(t => ({ id: t.id, speaker: t.speaker, text: t.text })));
+
             const completion = await llm.chat(messages);
             const responseText = completion.content;
             console.log(`✅ Classification response received: ${responseText}`);
-            return JSON.parse(responseText);
+            
+            const parsedResponse = JSON.parse(responseText);
+            console.log(`🔍 DEBUG: Parsed response:`, parsedResponse);
+            
+            return parsedResponse;
         } catch (error) {
             console.error('❌ Error during classification:', error.message);
             return null;
@@ -341,21 +516,56 @@ Keep all points concise and build upon previous analysis if provided.`,
     }
 
     parseClassificationResult(result, transcripts) {
+<<<<<<< HEAD
         const observations = [];
         const evaluations = [];
 
         if (!result || !Array.isArray(result.transcripts)) {
             return { observations, evaluations };
+=======
+        console.log(`🔍 DEBUG: parseClassificationResult called with:`, { result, transcriptsCount: transcripts.length });
+        
+        const userStats = {
+            me: { observations: [], evaluations: [] },
+            them: { observations: [], evaluations: [] }
+        };
+
+        if (!result || !Array.isArray(result.transcripts)) {
+            console.log(`🔍 DEBUG: Invalid result format:`, result);
+            return { userStats };
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
         }
 
+        console.log(`🔍 DEBUG: Processing ${result.transcripts.length} classification items`);
+        
+        // Отслеживаем пропущенные транскрипты
+        const processedIds = new Set();
+        
         for (const item of result.transcripts) {
+            console.log(`🔍 DEBUG: Processing item:`, item);
             const target = transcripts.find(t => t.id === item.id);
+            console.log(`🔍 DEBUG: Found target transcript:`, target ? { id: target.id, speaker: target.speaker, text: target.text?.substring(0, 50) + '...' } : 'NOT FOUND');
+            
             if (target) {
+                processedIds.add(target.id);
                 target.nvc_type = item.nvc_type;
+<<<<<<< HEAD
                 if (item.nvc_type === 'observation') {
                     observations.push(target.text);
                 } else if (item.nvc_type === 'evaluation') {
                     evaluations.push(target.text);
+=======
+                const speaker = target.speaker.toLowerCase();
+                const userKey = speaker === 'me' ? 'me' : 'them';
+                console.log(`🔍 DEBUG: Speaker: ${speaker}, UserKey: ${userKey}, NVC Type: ${item.nvc_type}`);
+                
+                if (item.nvc_type === 'observation') {
+                    userStats[userKey].observations.push(target.text);
+                    console.log(`🔍 DEBUG: Added observation for ${userKey}:`, target.text?.substring(0, 50) + '...');
+                } else if (item.nvc_type === 'evaluation') {
+                    userStats[userKey].evaluations.push(target.text);
+                    console.log(`🔍 DEBUG: Added evaluation for ${userKey}:`, target.text?.substring(0, 50) + '...');
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
                 }
 
                 try {
@@ -369,8 +579,22 @@ Keep all points concise and build upon previous analysis if provided.`,
                 }
             }
         }
+        
+        // Проверяем пропущенные транскрипты
+        const missingTranscripts = transcripts.filter(t => !processedIds.has(t.id));
+        if (missingTranscripts.length > 0) {
+            console.log(`⚠️ WARNING: ${missingTranscripts.length} transcripts were NOT classified by AI:`);
+            missingTranscripts.forEach(t => {
+                console.log(`   - ID: ${t.id}, Speaker: ${t.speaker}, Text: "${t.text?.substring(0, 50)}..."`);
+            });
+        }
 
+<<<<<<< HEAD
         return { observations, evaluations };
+=======
+        console.log(`🔍 DEBUG: Final userStats:`, userStats);
+        return { userStats };
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
     }
 
     /**
@@ -391,12 +615,37 @@ Keep all points concise and build upon previous analysis if provided.`,
                     const allTranscripts = await sttRepository.getAllTranscriptsBySessionId(
                         this.currentSessionId
                     );
+                    console.log(`🔍 DEBUG: Total transcripts in session: ${allTranscripts.length}`);
+                    console.log(`🔍 DEBUG: All transcripts:`, allTranscripts.map(t => ({ id: t.id, speaker: t.speaker, text: t.text?.substring(0, 50) + '...' })));
+                    
                     const recentTranscripts = allTranscripts.slice(-5);
+<<<<<<< HEAD
                     const classificationResult = await this.classifyConversation(recentTranscripts);
                     classificationData = this.parseClassificationResult(
                         classificationResult,
                         recentTranscripts
                     );
+=======
+                    console.log(`🔍 DEBUG: Recent 5 transcripts:`, recentTranscripts.map(t => ({ id: t.id, speaker: t.speaker, text: t.text?.substring(0, 50) + '...' })));
+                    
+                    // Применяем фильтр для удаления STT галлюцинаций
+                    const filteredTranscripts = this.filterValidTranscripts(recentTranscripts);
+                    console.log(`🔍 DEBUG: After filtering: ${filteredTranscripts.length} transcripts`);
+                    console.log(`🔍 DEBUG: Filtered transcripts:`, filteredTranscripts.map(t => ({ id: t.id, speaker: t.speaker, text: t.text?.substring(0, 50) + '...' })));
+                    
+                    if (filteredTranscripts.length > 0) {
+                        console.log(`🔍 DEBUG: Starting classification with ${filteredTranscripts.length} transcripts`);
+                        const classificationResult = await this.classifyConversation(filteredTranscripts);
+                        console.log(`🔍 DEBUG: Classification result:`, classificationResult);
+                        classificationData = this.parseClassificationResult(
+                            classificationResult,
+                            filteredTranscripts
+                        );
+                        console.log(`🔍 DEBUG: Parsed classification data:`, classificationData);
+                    } else {
+                        console.log('⚠️ No valid transcripts after filtering, skipping classification');
+                    }
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
                 }
             } catch (err) {
                 console.error('❌ Error during conversation classification:', err.message);
@@ -424,6 +673,59 @@ Keep all points concise and build upon previous analysis if provided.`,
             conversationLength: this.conversationHistory.length,
         };
     }
+<<<<<<< HEAD
+=======
+
+    // Получить статистику фильтрации
+    getFilterStats() {
+        return this.filterStats;
+    }
+
+    // Получить детальную статистику фильтрации
+    getDetailedFilterStats() {
+        console.log(`🔍 DEBUG: getDetailedFilterStats called with current filterStats:`, this.filterStats);
+        
+        const stats = { ...this.filterStats };
+        
+        // Добавляем процентные показатели
+        if (stats.total > 0) {
+            stats.filterRate = Math.round((stats.filtered / stats.total) * 100);
+            stats.validRate = 100 - stats.filterRate;
+        } else {
+            stats.filterRate = 0;
+            stats.validRate = 100;
+        }
+
+        // Добавляем топ причин фильтрации
+        stats.topReasons = Object.entries(stats.reasons)
+            .filter(([_, count]) => count > 0)
+            .sort(([_, a], [__, b]) => b - a)
+            .slice(0, 3)
+            .map(([reason, count]) => ({ reason, count }));
+
+        console.log(`🔍 DEBUG: Computed detailed stats:`, stats);
+        return stats;
+    }
+
+    // Логировать текущую статистику фильтрации
+    logFilterStats() {
+        const stats = this.getDetailedFilterStats();
+        console.log('📊 Current Filter Statistics:');
+        console.log(`   Total transcripts: ${stats.total}`);
+        console.log(`   Valid: ${stats.total - stats.filtered} (${stats.validRate}%)`);
+        console.log(`   Filtered: ${stats.filtered} (${stats.filterRate}%)`);
+        
+        if (stats.topReasons.length > 0) {
+            console.log('   Top filter reasons:');
+            stats.topReasons.forEach(({ reason, count }) => {
+                console.log(`     - ${reason}: ${count}`);
+            });
+        }
+        
+        console.log(`🔍 DEBUG: Full filter stats object:`, this.filterStats);
+        console.log(`🔍 DEBUG: Suspicious transcripts:`, this.filterStats.suspicious);
+    }
+>>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
 }
 
 module.exports = SummaryService; 
