@@ -1,3 +1,5 @@
+const CLASSIFICATION_PROMPT = `You are an assistant that classifies dialogue lines according to Nonviolent Communication principles. Each line should be labeled as either an "observation" (objective fact) or an "evaluation" (judgment or interpretation). Respond strictly in JSON with a "transcripts" array containing objects {"id": string, "nvc_type": "observation"|"evaluation"}. Also include top level "observations" and "evaluations" arrays listing the text of each line classified.`;
+
 const profilePrompts = {
     interview: {
         intro: `You are the user's live-meeting co-pilot called Pickle, developed and created by Pickle. Prioritize only the most recent context from the conversation.`,
@@ -402,8 +404,10 @@ Provide only the exact words to say in **markdown format**. Focus on finding win
         outputInstructions: `{{CONVERSATION_HISTORY}}`,
     },
 
+    nvc_fact_eval: CLASSIFICATION_PROMPT,
 };
 
 module.exports = {
     profilePrompts,
+    CLASSIFICATION_PROMPT,
 };

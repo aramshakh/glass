@@ -4,6 +4,8 @@ const { createLLM } = require('../../common/ai/factory');
 const sessionRepository = require('../../common/repositories/session');
 const summaryRepository = require('./repositories');
 const modelStateService = require('../../common/services/modelStateService');
+const sttRepository = require('../stt/repositories');
+const { CLASSIFICATION_PROMPT } = require('../../common/prompts/promptTemplates.js');
 
 class SummaryService {
     constructor() {
@@ -299,21 +301,111 @@ Keep all points concise and build upon previous analysis if provided.`,
         return structuredData;
     }
 
+    async classifyConversation(transcripts) {
+        if (!transcripts || transcripts.length === 0) return null;
+
+        try {
+            const modelInfo = await modelStateService.getCurrentModelInfo('llm');
+            if (!modelInfo || !modelInfo.apiKey) {
+                throw new Error('AI model or API key is not configured.');
+            }
+
+            const llm = createLLM(modelInfo.provider, {
+                apiKey: modelInfo.apiKey,
+                model: modelInfo.model,
+                temperature: 0,
+                maxTokens: 512,
+                usePortkey: modelInfo.provider === 'openai-glass',
+                portkeyVirtualKey:
+                    modelInfo.provider === 'openai-glass' ? modelInfo.apiKey : undefined,
+            });
+
+            const messages = [
+                { role: 'system', content: CLASSIFICATION_PROMPT },
+                {
+                    role: 'user',
+                    content: JSON.stringify({
+                        transcripts: transcripts.map(t => ({ id: t.id, text: t.text })),
+                    }),
+                },
+            ];
+
+            const completion = await llm.chat(messages);
+            const responseText = completion.content;
+            console.log(`✅ Classification response received: ${responseText}`);
+            return JSON.parse(responseText);
+        } catch (error) {
+            console.error('❌ Error during classification:', error.message);
+            return null;
+        }
+    }
+
+    parseClassificationResult(result, transcripts) {
+        const observations = [];
+        const evaluations = [];
+
+        if (!result || !Array.isArray(result.transcripts)) {
+            return { observations, evaluations };
+        }
+
+        for (const item of result.transcripts) {
+            const target = transcripts.find(t => t.id === item.id);
+            if (target) {
+                target.nvc_type = item.nvc_type;
+                if (item.nvc_type === 'observation') {
+                    observations.push(target.text);
+                } else if (item.nvc_type === 'evaluation') {
+                    evaluations.push(target.text);
+                }
+
+                try {
+                    sttRepository.updateTranscriptType(target.id, target.nvc_type);
+                } catch (err) {
+                    console.error('Error updating transcript type:', err);
+                }
+            }
+        }
+
+        return { observations, evaluations };
+    }
+
     /**
      * Triggers analysis when conversation history reaches 5 texts.
      */
     async triggerAnalysisIfNeeded() {
         if (this.conversationHistory.length >= 5 && this.conversationHistory.length % 5 === 0) {
-            console.log(`Triggering analysis - ${this.conversationHistory.length} conversation texts accumulated`);
+            console.log(
+                `Triggering analysis - ${this.conversationHistory.length} conversation texts accumulated`
+            );
 
             const data = await this.makeOutlineAndRequests(this.conversationHistory);
+
+            let classificationData = { observations: [], evaluations: [] };
+
+            try {
+                if (this.currentSessionId) {
+                    const allTranscripts = await sttRepository.getAllTranscriptsBySessionId(
+                        this.currentSessionId
+                    );
+                    const recentTranscripts = allTranscripts.slice(-5);
+                    const classificationResult = await this.classifyConversation(recentTranscripts);
+                    classificationData = this.parseClassificationResult(
+                        classificationResult,
+                        recentTranscripts
+                    );
+                }
+            } catch (err) {
+                console.error('❌ Error during conversation classification:', err.message);
+            }
+
             if (data) {
+                const merged = { ...data, ...classificationData };
                 console.log('Sending structured data to renderer');
-                this.sendToRenderer('summary-update', data);
-                
+                this.sendToRenderer('summary-update', merged);
+
                 // Notify callback
                 if (this.onAnalysisComplete) {
-                    this.onAnalysisComplete(data);
+                    this.onAnalysisComplete(merged);
                 }
             } else {
                 console.log('No analysis data returned');

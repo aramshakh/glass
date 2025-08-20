@@ -17,6 +17,9 @@ const sttRepositoryAdapter = {
     },
     getAllTranscriptsBySessionId: (sessionId) => {
         return getBaseRepository().getAllTranscriptsBySessionId(sessionId);
+    },
+    updateTranscriptType: (id, nvc_type) => {
+        return getBaseRepository().updateTranscriptType(id, nvc_type);
     }
 };
 

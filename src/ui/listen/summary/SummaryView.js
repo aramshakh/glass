@@ -222,6 +222,14 @@ export class SummaryView extends LitElement {
             color: #f1fa8c;
         }
 
+        .observation {
+            background: rgba(80, 250, 123, 0.2);
+        }
+
+        .evaluation {
+            background: rgba(255, 121, 198, 0.2);
+        }
+
         .empty-state {
             display: flex;
             align-items: center;
@@ -246,6 +254,8 @@ export class SummaryView extends LitElement {
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: [],
+            observations: [],
+            evaluations: [],
         };
         this.isVisible = true;
         this.hasCompletedRecording = false;
@@ -284,6 +294,8 @@ export class SummaryView extends LitElement {
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: [],
+            observations: [],
+            evaluations: [],
         };
         this.requestUpdate();
     }
@@ -484,6 +496,40 @@ export class SummaryView extends LitElement {
                                       `
                                   )
                             : html` <div class="request-item">No content yet...</div> `}
+                        ${data.observations && data.observations.length > 0
+                            ? html`
+                                  <insights-title>Facts</insights-title>
+                                  ${data.observations.map(
+                                      (fact, index) => html`
+                                          <div
+                                              class="markdown-content observation"
+                                              data-markdown-id="observation-${index}"
+                                              data-original-text="${fact}"
+                                              @click=${() => this.handleMarkdownClick(fact)}
+                                          >
+                                              ${fact}
+                                          </div>
+                                      `
+                                  )}
+                              `
+                            : ''}
+                        ${data.evaluations && data.evaluations.length > 0
+                            ? html`
+                                  <insights-title>Evaluations</insights-title>
+                                  ${data.evaluations.map(
+                                      (evaluation, index) => html`
+                                          <div
+                                              class="markdown-content evaluation"
+                                              data-markdown-id="evaluation-${index}"
+                                              data-original-text="${evaluation}"
+                                              @click=${() => this.handleMarkdownClick(evaluation)}
+                                          >
+                                              ${evaluation}
+                                          </div>
+                                      `
+                                  )}
+                              `
+                            : ''}
                         ${data.topic.header
                             ? html`
                                   <insights-title>${data.topic.header}</insights-title>

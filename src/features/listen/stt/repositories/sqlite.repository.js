@@ -22,7 +22,20 @@ function getAllTranscriptsBySessionId(sessionId) {
     return db.prepare(query).all(sessionId);
 }
 
+function updateTranscriptType(id, nvc_type) {
+    const db = sqliteClient.getDb();
+    const query = "UPDATE transcripts SET nvc_type = ? WHERE id = ?";
+
+    try {
+        db.prepare(query).run(nvc_type, id);
+    } catch (err) {
+        console.error('Error updating transcript type:', err);
+        throw err;
+    }
+}
+
 module.exports = {
     addTranscript,
     getAllTranscriptsBySessionId,
-}; 
+    updateTranscriptType,
+};

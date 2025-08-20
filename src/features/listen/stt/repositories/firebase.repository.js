@@ -30,7 +30,13 @@ async function getAllTranscriptsBySessionId(sessionId) {
     return querySnapshot.docs.map(doc => doc.data());
 }
 
+async function updateTranscriptType(id, nvc_type) {
+    // Firestore update implementation can be added later
+    return Promise.resolve();
+}
+
 module.exports = {
     addTranscript,
     getAllTranscriptsBySessionId,
-}; 
+    updateTranscriptType,
+};

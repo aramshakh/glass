@@ -108,6 +108,7 @@ async function checkAndRunMigration(firebaseUser) {
                     speaker: t.speaker ?? null,
                     text: encryptionService.encrypt(t.text ?? ''),
                     lang: t.lang ?? 'en',
+                    nvc_type: t.nvc_type ?? null,
                     created_at: t.created_at ? Timestamp.fromMillis(t.created_at * 1000) : null
                 };
                 phase2Batch.set(transcriptRef, cleanTranscript);
