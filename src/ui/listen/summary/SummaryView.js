@@ -246,6 +246,7 @@ export class SummaryView extends LitElement {
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: [],
+            emotions: {},
         };
         this.isVisible = true;
         this.hasCompletedRecording = false;
@@ -284,6 +285,7 @@ export class SummaryView extends LitElement {
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: [],
+            emotions: {},
         };
         this.requestUpdate();
     }
@@ -422,7 +424,13 @@ export class SummaryView extends LitElement {
     }
 
     getSummaryText() {
-        const data = this.structuredData || { summary: [], topic: { header: '', bullets: [] }, actions: [] };
+        const data = this.structuredData || {
+            summary: [],
+            topic: { header: '', bullets: [] },
+            actions: [],
+            followUps: [],
+            emotions: {},
+        };
         let sections = [];
 
         if (data.summary && data.summary.length > 0) {
@@ -435,6 +443,12 @@ export class SummaryView extends LitElement {
 
         if (data.actions && data.actions.length > 0) {
             sections.push(`\nActions:\n${data.actions.map(a => `▸ ${a}`).join('\n')}`);
+        }
+
+        if (data.emotions && Object.keys(data.emotions).length > 0) {
+            sections.push(`\nEmotions:\n${Object.entries(data.emotions)
+                .map(([speaker, feeling]) => `${speaker}: ${feeling}`)
+                .join('\n')}`);
         }
 
         if (data.followUps && data.followUps.length > 0) {
@@ -458,9 +472,15 @@ export class SummaryView extends LitElement {
             summary: [],
             topic: { header: '', bullets: [] },
             actions: [],
+            followUps: [],
+            emotions: {},
         };
 
-        const hasAnyContent = data.summary.length > 0 || data.topic.bullets.length > 0 || data.actions.length > 0;
+        const hasAnyContent =
+            data.summary.length > 0 ||
+            data.topic.bullets.length > 0 ||
+            data.actions.length > 0 ||
+            (data.emotions && Object.keys(data.emotions).length > 0);
 
         return html`
             <div class="insights-container">
@@ -520,6 +540,24 @@ export class SummaryView extends LitElement {
                                               </div>
                                           `
                                       )}
+                              `
+                            : ''}
+                        ${data.emotions && Object.keys(data.emotions).length
+                            ? html`
+                                  <insights-title>Emotions</insights-title>
+                                  ${Object.entries(data.emotions).map(
+                                      ([speaker, feeling], idx) => html`
+                                          <div
+                                              class="markdown-content"
+                                              data-markdown-id="emotion-${idx}"
+                                              data-original-text="${speaker}: ${feeling}"
+                                              @click=${() =>
+                                                  this.handleMarkdownClick(`${speaker}: ${feeling}`)}
+                                          >
+                                              ${speaker}: ${feeling}
+                                          </div>
+                                      `
+                                  )}
                               `
                             : ''}
                         ${this.hasCompletedRecording && data.followUps && data.followUps.length > 0
