@@ -192,12 +192,16 @@ Keep all points concise and build upon previous analysis if provided.`,
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
+            emotions: {},
         };
 
         // 이전 결과가 있으면 기본값으로 사용
         if (previousResult) {
             structuredData.topic.header = previousResult.topic.header;
             structuredData.summary = [...previousResult.summary];
+            if (previousResult.emotions) {
+                structuredData.emotions = { ...previousResult.emotions };
+            }
         }
 
         try {
@@ -226,6 +230,9 @@ Keep all points concise and build upon previous analysis if provided.`,
                     continue;
                 } else if (trimmedLine.startsWith('**Suggested Questions**')) {
                     currentSection = 'questions';
+                    continue;
+                } else if (trimmedLine.startsWith('**Emotions**')) {
+                    currentSection = 'emotions';
                     continue;
                 }
 
@@ -261,6 +268,14 @@ Keep all points concise and build upon previous analysis if provided.`,
                     if (question && question.includes('?')) {
                         structuredData.actions.push(`❓ ${question}`);
                     }
+                } else if (currentSection === 'emotions' && trimmedLine) {
+                    const lineContent = trimmedLine.startsWith('-')
+                        ? trimmedLine.substring(1).trim()
+                        : trimmedLine;
+                    const [speaker, feeling] = lineContent.split(':').map(s => s.trim());
+                    if (speaker && feeling) {
+                        structuredData.emotions[speaker] = feeling;
+                    }
                 }
             }
 
@@ -282,6 +297,9 @@ Keep all points concise and build upon previous analysis if provided.`,
             if (structuredData.topic.bullets.length === 0 && previousResult) {
                 structuredData.topic.bullets = previousResult.topic.bullets;
             }
+            if (Object.keys(structuredData.emotions).length === 0 && previousResult && previousResult.emotions) {
+                structuredData.emotions = previousResult.emotions;
+            }
         } catch (error) {
             console.error('❌ Error parsing response text:', error);
             // 에러 시 이전 결과 반환
@@ -291,6 +309,7 @@ Keep all points concise and build upon previous analysis if provided.`,
                     topic: { header: 'Analysis in progress', bullets: [] },
                     actions: ['✨ What should I say next?', '💬 Suggest follow-up questions'],
                     followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
+                    emotions: {},
                 }
             );
         }
