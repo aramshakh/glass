@@ -30,6 +30,7 @@ const LATEST_SCHEMA = {
             { name: 'speaker', type: 'TEXT' },
             { name: 'text', type: 'TEXT' },
             { name: 'lang', type: 'TEXT' },
+            { name: 'nvc_type', type: 'TEXT' },
             { name: 'created_at', type: 'INTEGER' },
             { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' }
         ]

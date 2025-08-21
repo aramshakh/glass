@@ -1,4 +1,13 @@
-const { collection, addDoc, query, getDocs, orderBy, Timestamp } = require('firebase/firestore');
+const {
+    collection,
+    addDoc,
+    query,
+    getDocs,
+    orderBy,
+    Timestamp,
+    doc,
+    updateDoc,
+} = require('firebase/firestore');
 const { getFirestoreInstance } = require('../../../common/services/firebaseClient');
 const { createEncryptedConverter } = require('../../../common/repositories/firestoreConverter');
 
@@ -30,7 +39,14 @@ async function getAllTranscriptsBySessionId(sessionId) {
     return querySnapshot.docs.map(doc => doc.data());
 }
 
+async function updateTranscriptType(sessionId, id, nvc_type) {
+    const transcriptRef = doc(getFirestoreInstance(), `sessions/${sessionId}/transcripts`, id);
+    await updateDoc(transcriptRef, { nvc_type });
+}
+
 module.exports = {
     addTranscript,
     getAllTranscriptsBySessionId,
-}; 
+    updateTranscriptType,
+};
+

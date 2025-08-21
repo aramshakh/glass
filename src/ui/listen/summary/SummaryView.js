@@ -227,55 +227,7 @@ export class SummaryView extends LitElement {
         }
 
         .evaluation {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Fact/Evaluation Ratio Chart Styles */
-        .ratio-chart-container {
-            margin: 16px 0;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .ratio-chart-title {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 12px;
-            font-family: 'Helvetica Neue', sans-serif;
-        }
-
-        .ratio-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .ratio-bar {
-            height: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .ratio-fact-segment {
-            height: 100%;
-            background: #5cb85c;
-            float: left;
-            transition: width 0.3s ease;
-        }
-
-        .ratio-evaluation-segment {
-            height: 100%;
-            background: #d9534f;
-            float: left;
-            transition: width 0.3s ease;
+            background: rgba(255, 121, 198, 0.2);
         }
 
         .empty-state {
@@ -346,21 +298,6 @@ export class SummaryView extends LitElement {
             evaluations: [],
         };
         this.requestUpdate();
-    }
-
-    // Calculate Fact/Evaluation ratio
-    calculateRatio() {
-        const { observations = [], evaluations = [] } = this.structuredData;
-        const total = observations.length + evaluations.length;
-        
-        if (total === 0) {
-            return { factPercent: 0, evaluationPercent: 0, total: 0 };
-        }
-        
-        const factPercent = Math.round((observations.length / total) * 100);
-        const evaluationPercent = 100 - factPercent;
-        
-        return { factPercent, evaluationPercent, total };
     }
 
     async loadLibraries() {
@@ -559,6 +496,40 @@ export class SummaryView extends LitElement {
                                       `
                                   )
                             : html` <div class="request-item">No content yet...</div> `}
+                        ${data.observations && data.observations.length > 0
+                            ? html`
+                                  <insights-title>Facts</insights-title>
+                                  ${data.observations.map(
+                                      (fact, index) => html`
+                                          <div
+                                              class="markdown-content observation"
+                                              data-markdown-id="observation-${index}"
+                                              data-original-text="${fact}"
+                                              @click=${() => this.handleMarkdownClick(fact)}
+                                          >
+                                              ${fact}
+                                          </div>
+                                      `
+                                  )}
+                              `
+                            : ''}
+                        ${data.evaluations && data.evaluations.length > 0
+                            ? html`
+                                  <insights-title>Evaluations</insights-title>
+                                  ${data.evaluations.map(
+                                      (evaluation, index) => html`
+                                          <div
+                                              class="markdown-content evaluation"
+                                              data-markdown-id="evaluation-${index}"
+                                              data-original-text="${evaluation}"
+                                              @click=${() => this.handleMarkdownClick(evaluation)}
+                                          >
+                                              ${evaluation}
+                                          </div>
+                                      `
+                                  )}
+                              `
+                            : ''}
                         ${data.topic.header
                             ? html`
                                   <insights-title>${data.topic.header}</insights-title>
@@ -614,27 +585,6 @@ export class SummaryView extends LitElement {
                                   )}
                               `
                             : ''}
-                        
-                        <!-- Fact/Evaluation Ratio Chart -->
-                        ${(() => {
-                            const ratio = this.calculateRatio();
-                            if (ratio.total > 0) {
-                                return html`
-                                    <div class="ratio-chart-container">
-                                        <div class="ratio-chart-title">Fact / Evaluations</div>
-                                        <div class="ratio-labels">
-                                            <span>Fact ${ratio.factPercent}%</span>
-                                            <span>Evaluations ${ratio.evaluationPercent}%</span>
-                                        </div>
-                                        <div class="ratio-bar">
-                                            <div class="ratio-fact-segment" style="width: ${ratio.factPercent}%"></div>
-                                            <div class="ratio-evaluation-segment" style="width: ${ratio.evaluationPercent}%"></div>
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                            return '';
-                        })()}
                     `}
             </div>
         `;
