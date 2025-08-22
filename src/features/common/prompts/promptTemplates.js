@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-const CLASSIFICATION_PROMPT = `You are an assistant that classifies dialogue lines according to Nonviolent Communication principles. Each line should be labeled as either an "observation" (objective fact) or an "evaluation" (judgment or interpretation). Respond strictly in JSON with a "transcripts" array containing objects {"id": string, "nvc_type": "observation"|"evaluation"}. Also include top level "observations" and "evaluations" arrays listing the text of each line classified.`;
-=======
 const CLASSIFICATION_PROMPT = `You are an assistant that classifies dialogue lines according to Nonviolent Communication principles. 
 
 IMPORTANT: Classify ALL dialogue lines provided to you. Do NOT filter or exclude any lines - this is handled by the system separately.
@@ -27,7 +24,6 @@ For each transcript line, respond with:
 - "reason": brief explanation of why it's invalid (if applicable)
 
 Focus on maintaining conversation quality and excluding STT artifacts.`;
->>>>>>> 15947c4 (fix: resolve transcript analysis gaps - remove AI filtering, add comprehensive debug logging, track missing transcripts)
 
 const profilePrompts = {
     interview: {
@@ -439,4 +435,5 @@ Provide only the exact words to say in **markdown format**. Focus on finding win
 module.exports = {
     profilePrompts,
     CLASSIFICATION_PROMPT,
+    TRANSCRIPT_VALIDATION_PROMPT,
 };
