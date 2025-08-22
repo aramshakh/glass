@@ -57,6 +57,7 @@ const LATEST_SCHEMA = {
             { name: 'tldr', type: 'TEXT' },
             { name: 'bullet_json', type: 'TEXT' },
             { name: 'action_json', type: 'TEXT' },
+            { name: 'emotion_json', type: 'TEXT' },
             { name: 'tokens_used', type: 'INTEGER' },
             { name: 'updated_at', type: 'INTEGER' },
             { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' }

@@ -3,7 +3,7 @@ const { getFirestoreInstance } = require('../../../common/services/firebaseClien
 const { createEncryptedConverter } = require('../../../common/repositories/firestoreConverter');
 const encryptionService = require('../../../common/services/encryptionService');
 
-const fieldsToEncrypt = ['tldr', 'text', 'bullet_json', 'action_json'];
+const fieldsToEncrypt = ['tldr', 'text', 'bullet_json', 'action_json', 'emotion_json'];
 const summaryConverter = createEncryptedConverter(fieldsToEncrypt);
 
 function summaryDocRef(sessionId) {
@@ -14,7 +14,7 @@ function summaryDocRef(sessionId) {
     return doc(db, docPath).withConverter(summaryConverter);
 }
 
-async function saveSummary({ uid, sessionId, tldr, text, bullet_json, action_json, model = 'unknown' }) {
+async function saveSummary({ uid, sessionId, tldr, text, bullet_json, action_json, emotion_json, model = 'unknown' }) {
     const now = Timestamp.now();
     const summaryData = {
         uid, // To know who generated the summary
@@ -25,6 +25,7 @@ async function saveSummary({ uid, sessionId, tldr, text, bullet_json, action_jso
         tldr,
         bullet_json,
         action_json,
+        emotion_json,
         updated_at: now,
     };
     

@@ -339,6 +339,7 @@ Keep all points concise and build upon previous analysis if provided.`,
                         tldr: structuredData.summary.join('\n'),
                         bullet_json: JSON.stringify(structuredData.topic.bullets),
                         action_json: JSON.stringify(structuredData.actions),
+                        emotion_json: JSON.stringify(structuredData.emotions),
                         model: modelInfo.model
                     });
                 } catch (err) {
@@ -371,12 +372,14 @@ Keep all points concise and build upon previous analysis if provided.`,
             topic: { header: '', bullets: [] },
             actions: [],
             followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
+            emotions: {},
         };
 
         // 이전 결과가 있으면 기본값으로 사용
         if (previousResult) {
             structuredData.topic.header = previousResult.topic.header;
             structuredData.summary = [...previousResult.summary];
+            structuredData.emotions = { ...(previousResult.emotions || {}) };
         }
 
         try {
@@ -405,6 +408,9 @@ Keep all points concise and build upon previous analysis if provided.`,
                     continue;
                 } else if (trimmedLine.startsWith('**Suggested Questions**')) {
                     currentSection = 'questions';
+                    continue;
+                } else if (trimmedLine.startsWith('**Emotions**')) {
+                    currentSection = 'emotions';
                     continue;
                 }
 
@@ -439,6 +445,13 @@ Keep all points concise and build upon previous analysis if provided.`,
                     const question = trimmedLine.replace(/^\d+\.\s*/, '').trim();
                     if (question && question.includes('?')) {
                         structuredData.actions.push(`❓ ${question}`);
+                    }
+                } else if (trimmedLine.startsWith('-') && currentSection === 'emotions') {
+                    const match = trimmedLine.match(/^-\s*(.+?):\s*(.+)$/);
+                    if (match) {
+                        const speaker = match[1].trim();
+                        const feeling = match[2].trim();
+                        structuredData.emotions[speaker] = feeling;
                     }
                 }
             }

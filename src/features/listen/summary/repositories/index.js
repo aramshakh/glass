@@ -11,9 +11,9 @@ function getBaseRepository() {
 }
 
 const summaryRepositoryAdapter = {
-    saveSummary: ({ sessionId, tldr, text, bullet_json, action_json, model }) => {
+    saveSummary: ({ sessionId, tldr, text, bullet_json, action_json, emotion_json, model }) => {
         const uid = authService.getCurrentUserId();
-        return getBaseRepository().saveSummary({ uid, sessionId, tldr, text, bullet_json, action_json, model });
+        return getBaseRepository().saveSummary({ uid, sessionId, tldr, text, bullet_json, action_json, emotion_json, model });
     },
     getSummaryBySessionId: (sessionId) => {
         return getBaseRepository().getSummaryBySessionId(sessionId);
